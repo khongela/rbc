@@ -1,6 +1,10 @@
 import chess
 from reconchess.utilities import without_opponent_pieces, is_illegal_castle
 
+"""
+https://reconchess.readthedocs.io/en/latest/reconchess.html
+"""
+
 board_state = input()
 board = chess.Board(fen=board_state)
 

@@ -1,5 +1,7 @@
 import chess
-
+"""
+https://python-chess.readthedocs.io/en/latest/
+"""
 board_state = input()
 move = input()
 
