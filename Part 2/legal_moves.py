@@ -13,6 +13,5 @@ for move in without_opponent_pieces(board).generate_castling_moves():
     if not is_illegal_castle(board, move):
         moves.add(move.uci())
 
-print_moves = sorted(moves)
-for move in print_moves:
+for move in sorted(moves):
     print(move)
