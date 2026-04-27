@@ -10,7 +10,7 @@ def generate_moves(board):
         moves.add(move)
     for move in without_opponent_pieces(board).generate_castling_moves():
         if not is_illegal_castle(board, move):
-            moves.add(move.uci())
+            moves.add(move)
     return moves
 
 def make_move(board, move):
@@ -22,8 +22,12 @@ def make_move(board, move):
 board = input()
 board = chess.Board(fen=board)
 
+states = []
 for move in generate_moves(board):
-    print(make_move(board,move))
+    states.append(make_move(board,move))
+
+for state in sorted(states):
+    print(state)
 
 
 
