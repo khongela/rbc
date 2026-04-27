@@ -6,11 +6,10 @@ https://reconchess.readthedocs.io/en/latest/reconchess.html
 """
 
 board_state = input()
-moves = set()
-
 board = chess.Board(fen=board_state)
-moves.add('0000')
 
+moves = set()
+moves.add(chess.Move.null())
 for move in board.pseudo_legal_moves:
     moves.add(move.uci())
     
