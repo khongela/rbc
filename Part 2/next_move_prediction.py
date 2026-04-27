@@ -9,7 +9,7 @@ board_state = input()
 board = chess.Board(fen=board_state)
 
 moves = set()
-moves.add('0000')
+moves.add(chess.Move.null())
 for move in board.pseudo_legal_moves:
     moves.add(move.uci())
     
