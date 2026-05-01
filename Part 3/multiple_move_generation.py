@@ -10,7 +10,7 @@ def best_move(board, engine):
     #Stockfish
     try:
         board.clear_stack()
-        result = engine.play(board, chess.engine.Limit(time=0.5))
+        result = engine.play(board, chess.engine.Limit(time=0.1))
         return result.move
     except chess.engine.EngineTerminatedError:
         print('Stockfish Engine died')
@@ -19,7 +19,7 @@ def best_move(board, engine):
 
     engine.quit()
     
-# engine = chess.engine.SimpleEngine.popen_uci('./stockfish.exe', setpgrp=True) # FOR LOCAL
+#engine = chess.engine.SimpleEngine.popen_uci('./stockfish.exe', setpgrp=True) # FOR LOCAL
 engine = chess.engine.SimpleEngine.popen_uci('/opt/stockfish/stockfish', setpgrp=True)
 n = int(input())
 votes = {}
