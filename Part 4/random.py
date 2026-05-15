@@ -9,7 +9,7 @@ def getPossibleMoves(board, captured_my_piece, capture_square):
 
         #If a capture happened, we only want to keep boards where that capture is possible
         #Illegal move, don't add to next boards
-        if captured_my_piece and board.is_capture(move) and move.to_square == capture_square :
+        if captured_my_piece and not (board.is_capture(move) and move.to_square == capture_square):
             continue
         next_boards.add(next_board)
     return next_boards
