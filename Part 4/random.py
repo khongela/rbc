@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 import chess
 import chess.engine
@@ -22,6 +22,25 @@ def isBlockConsistent(board, block : Tuple[Square, Optional[chess.Piece]]):
     if board.piece_at(block.square) != block.piece:
         return False
     return True
+
+def best_move(board, engine, time_limit=0.1):
+    opponent_king_square = board.king(not board.turn)
+    if opponent_king_square:
+        attackers = board.attackers(board.turn, opponent_king_square)
+        if attackers:
+            attacker_square = attackers.pop()
+            return chess.Move(attacker_square, opponent_king_square)
+    #Stockfish
+    try:
+        board.clear_stack()
+        result = engine.play(board, chess.engine.Limit(time=time_limit))
+        return result.move
+    except chess.engine.EngineTerminatedError:
+        print('Stockfish Engine died')
+    except chess.engine.EngineError:
+        print('Stockfish Engine bad state')
+
+    engine.quit()
 
 
 class RandomSensing(Player):
@@ -53,8 +72,7 @@ class RandomSensing(Player):
 
 # Implement sensing how Trout bot chooses to sense
 # TO DO: Improve this based on the paper suggested in Assigment Doc: The Second NeurIPS Tournament of Reconnaissance Blind Chess
-    def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> \
-            Optional[Square]:
+    def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> Optional[Square]:
         # if our piece was just captured, sense where it was captured
         if self.my_piece_captured_square:
             return self.my_piece_captured_square
@@ -86,12 +104,61 @@ class RandomSensing(Player):
         self.boards = next_boards
 
 
-    def choose_move(self, move_actions, seconds_left):
+    def choose_move(self, move_actions: List[chess.Move], seconds_left: float) -> Optional[chess.Move]:
     # execute a chess move
-        pass
+        if not self.boards:
+            return random.choice(move_actions)
+
+        if len(self.boards) > 10000:
+            self.boards = set(random.sample(list(self.boards), 10000))
+        
+        votes = {}
+        N = len(self.boards)
+        time_limit = 10/N if N > 0 else 1
+        
+        for board in self.boards:
+            move = best_move(board, self.engine, time_limit)
+            if move:
+                key = str(move)
+                votes[key] = votes.get(key, 0) + 1
+            
+        # Find max votes first, then get min (alphabetically first) among ties
+        if not votes:
+            return random.choice(move_actions)
+        max_votes = max(votes.values())
+        result = min(move for move, count in votes.items() if count == max_votes)
+        return chess.Move.from_uci(result)
+            
+
     def handle_move_result(self, requested_move, taken_move, captured_opponent_piece, capture_square):
     # this function is called after your move is executed.
-        pass
+    #  Note that the move requested and the move actually executed may differ 
+
+    # Possible outcomes for the move: 1. Move is legal and executed - simple move or a capture 2. Move is illegal and no move executed
+        next_boards = set()
+
+        for board in self.boards:
+            if taken_move is None:
+                if taken_move in board.legal_moves:
+                    continue
+                next_boards.add(board)
+            else:
+                if taken_move not in board.legal_moves: # Was executed thus is a legal move, but not in this board's possibilities thus this board is not possible
+                    continue
+                if captured_opponent_piece and not board.is_capture(taken_move): # Move was capture, but this board doesn't reflect that move as a capture
+                    continue
+                if not captured_opponent_piece and board.is_capture(taken_move): # Move was not a capture, but this board reflects it as a capture
+                    continue
+
+                next_board = board.copy()
+                next_board.push(taken_move)
+                next_boards.add(next_board)
+        self.boards = next_boards
+
     def handle_game_end(self, winner_color, win_reason, game_history):
         # shut down everything at the end of the game
-        pass
+        try:
+            # if the engine is already terminated then this call will throw an exception
+            self.engine.quit()
+        except chess.engine.EngineTerminatedError:
+            pass
