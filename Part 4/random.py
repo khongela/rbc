@@ -1,7 +1,7 @@
 import chess
 import chess.engine
 
-def getPossibleMoves(board, captured_my_piece, capture_square):
+def getPossibleBoardStates(board, captured_my_piece, capture_square):
     next_boards = set()
     for move in board.legal_moves:
         next_board = board.copy()
@@ -28,7 +28,19 @@ class RandomSensing(Player):
 
     def handle_opponent_move_result(self, captured_my_piece: bool, capture_square: chess.Square):
     # feedback on whether the opponent captured a piece
-        pass
+
+    # Generate a set of possible boards after opponent's move for each possible board under considering
+        next_boards = set()
+
+        for board in self.boards:
+            new_boards = getPossibleBoardStates(board, captured_my_piece, capture_square)
+            next_boards.update(new_boards)
+
+        if not next_boards:
+            self.boards = self.boards
+        else:
+            self.boards = next_boards
+
     def choose_sense(self, sense_actions, move_actions, seconds_left):
     # write code here to select a sensing move
         pass
