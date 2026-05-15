@@ -5,6 +5,7 @@ import chess.engine
 from typing import List, Optional, Tuple
 from reconchess import Player, Color, Square, WinReason, GameHistory
 
+# engine = chess.engine.SimpleEngine.popen_uci('./stockfish.exe', setpgrp=True)
 STOCKFISH_PATH = '../engine/stockfish-windows-x86-64-avx2.exe'
 MAX_BOARD_COUNT = 10000
 MIN_TIME_LIMIT = 0.001 
