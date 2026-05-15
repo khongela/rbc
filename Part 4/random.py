@@ -1,3 +1,5 @@
+from typing import Optional
+
 import chess
 import chess.engine
 import random
@@ -15,6 +17,12 @@ def getPossibleBoardStates(board, captured_my_piece, capture_square):
             continue
         next_boards.add(next_board)
     return next_boards
+
+def isBlockConsistent(board, block : Tuple[Square, Optional[chess.Piece]]):
+    if board.piece_at(block.square) != block.piece:
+        return False
+    return True
+
 
 class RandomSensing(Player):
     def __init__(self):
@@ -64,8 +72,18 @@ class RandomSensing(Player):
     
     def handle_sense_result(self, sense_result):
     # This is where the sensing result returns feedback
-        # I want to eliminate any boards that are inconsistent with sensing result
-        pass
+        next_boards = set()
+
+        for board in self.boards:
+            consistent = True
+            for block in sense_result:
+                if not isBlockConsistent(board, block):
+                    consistent = False
+                    break
+            if consistent:
+                next_boards.add(board)
+
+        self.boards = next_boards
 
 
     def choose_move(self, move_actions, seconds_left):
