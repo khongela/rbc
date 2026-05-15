@@ -41,9 +41,25 @@ class RandomSensing(Player):
         else:
             self.boards = next_boards
 
-    def choose_sense(self, sense_actions, move_actions, seconds_left):
-    # write code here to select a sensing move
-        pass
+# Implement sensing how Trout bot chooses to sense
+# TO DO: Improve this based on the paper suggested in Assigment Doc: The Second NeurIPS Tournament of Reconnaissance Blind Chess
+    def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> \
+            Optional[Square]:
+        # if our piece was just captured, sense where it was captured
+        if self.my_piece_captured_square:
+            return self.my_piece_captured_square
+
+        # if we might capture a piece when we move, sense where the capture will occur
+        future_move = self.choose_move(move_actions, seconds_left)
+        if future_move is not None and self.board.piece_at(future_move.to_square) is not None:
+            return future_move.to_square
+
+        # otherwise, just randomly choose a sense action, but don't sense on a square where our pieces are located
+        for square, piece in self.board.piece_map().items():
+            if piece.color == self.color:
+                sense_actions.remove(square)
+        return random.choice(sense_actions)
+    
     def handle_sense_result(self, sense_result):
     # This is where the sensing result returns feedback
         pass
