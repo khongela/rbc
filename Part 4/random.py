@@ -1,5 +1,7 @@
 import chess
 import chess.engine
+import random
+from reconchess import *
 
 def getPossibleBoardStates(board, captured_my_piece, capture_square):
     next_boards = set()
@@ -62,7 +64,10 @@ class RandomSensing(Player):
     
     def handle_sense_result(self, sense_result):
     # This is where the sensing result returns feedback
+        # I want to eliminate any boards that are inconsistent with sensing result
         pass
+
+
     def choose_move(self, move_actions, seconds_left):
     # execute a chess move
         pass
