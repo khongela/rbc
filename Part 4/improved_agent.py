@@ -60,14 +60,21 @@ class ImprovedAgent(Player):
         self.engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH, setpgrp=True)
         self.boards = set() #Use FEN string representation for hashing and deduplication - performance improvement. 
         self.color = None
+        self.first_turn = True
 
     def handle_game_start(self, color: chess.Color, board: chess.Board, opponent_name: str):
     # function that is run when the game starts
         self.boards = {board.fen()}
         self.color = color
+        self.first_turn = True
 
     def handle_opponent_move_result(self, captured_my_piece: bool, capture_square: chess.Square):
     # feedback on whether the opponent captured a piece
+        if self.color == chess.WHITE and self.first_turn:
+            self.first_turn = False
+            return
+
+        self.first_turn = False
         next_boards = set()
 
         for board in self.boards:
@@ -79,18 +86,12 @@ class ImprovedAgent(Player):
 
 #TODO: Improvements
     def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> Optional[Square]:
-        if not self.boards:
-            return random.choice(sense_actions)
-
-        board = next(iter(self.boards))
-        available_sense_actions = list(sense_actions)
-
-        for square, piece in chess.Board(board).piece_map().items():
-            if piece.color == self.color:
-                if square in available_sense_actions:
-                    available_sense_actions.remove(square)
-
-        return random.choice(available_sense_actions or sense_actions)
+        valid_sqaures = []
+        for r in range(1, 7):
+            for f in range(1, 7):
+                square = chess.square(f, r)
+                valid_sqaures.append(square)
+        return random.choice(valid_sqaures)
     
     def handle_sense_result(self, sense_result: List[Tuple[Square, Optional[chess.Piece]]]):
     # This is where the sensing result returns feedback
