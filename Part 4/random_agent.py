@@ -1,8 +1,11 @@
+import os
 from typing import List, Optional, Tuple
 
 import chess
 import random
 from reconchess import *
+
+STOCKFISH_PATH = r'./stockfish'
 
 def getPossibleBoardStates(board, captured_my_piece, capture_square):
     next_boards = []
@@ -46,8 +49,7 @@ class RandomSensing(Player):
     def __init__(self):
     # setup agent as you see fit
     #'/opt/stockfish/stockfish', setpgrp=True) # FOR MARKER
-        stockfish_path = './stockfish.exe'
-        self.engine = chess.engine.SimpleEngine.popen_uci(stockfish_path, setpgrp=True)
+        self.engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH, setpgrp=True) if os.path.exists(STOCKFISH_PATH) else None
         self.boards = []
         self.color = None
 
