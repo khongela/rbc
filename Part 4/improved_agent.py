@@ -16,8 +16,11 @@ def getPossibleBoardStates(board, captured_my_piece, capture_square):
             if not board.is_capture(move):
                 continue
             
-            #TODO: Consider en passant capture case where the capture square is different from the move to square - chess is weird
-            expected_capture_square = move.to_square
+            # Handle en passant capture case where the capture square is different from the move to square
+            if board.is_en_passant(move):
+                expected_capture_square = chess.square(chess.square_file(move.to_square), chess.square_rank(move.from_square))
+            else:
+                expected_capture_square = move.to_square
             if capture_square is not None and expected_capture_square != capture_square:
                 continue
         else:
@@ -78,6 +81,7 @@ class ImprovedAgent(Player):
             self.boards = next_boards
 
 #TODO: Improvements
+    # From the paper - entropy based sensing(aiming to reduce uncertainty - choose sense that will reduce number of possible states and improves expected decision quality)
     def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> Optional[Square]:
         valid_sqaures = []
         for r in range(1, 7):
@@ -151,11 +155,11 @@ class ImprovedAgent(Player):
                     if not board.is_capture(taken_move) or capture_square is None:
                         continue
 
-                    #TODO: en passant capture case to be considered - capture square is different from move to square - chess is weird
-                    # if board.is_en_passant(taken_move):
-                    #     expected_capture_square = chess.square(chess.square_file(taken_move.to_square), chess.square_rank(taken_move.from_square))
-
-                    expected_capture_square = taken_move.to_square
+                    if board.is_en_passant(taken_move):
+                        expected_capture_square = chess.square(chess.square_file(taken_move.to_square), chess.square_rank(taken_move.from_square))
+                    else:
+                        expected_capture_square = taken_move.to_square
+                    
                     if expected_capture_square != capture_square:
                         continue
                 else:
