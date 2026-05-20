@@ -9,8 +9,8 @@ import chess.engine
 from reconchess import *
 
 
-# ── Engine ──────────────────────────────────────────────────────────────────
-STOCKFISH_PATH = './stockfish.exe'
+# STOCKFISH_PATH = './stockfish.exe' # Local
+STOCKFISH_PATH = './opt/stockfish/stockfish' # For Submission
 
 # ── Board-pool limits ────────────────────────────────────────────────────────
 MAX_BOARD_COUNT       = 2000
@@ -44,10 +44,6 @@ OPP_CASTLING_BLOCKER_PAWNS = {
     chess.BLACK: [chess.F2, chess.G2, chess.C2, chess.D2],
 }
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  Pure helper functions
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def start_engine() -> Optional[chess.engine.SimpleEngine]:
     try:
@@ -346,14 +342,12 @@ class ImprovedAgent(Player):
         self.my_piece_captured_square: Optional[chess.Square] = None
         self.recent_senses: List[chess.Square] = []
 
-        # Karabo's castling state
+        # Castling State
         self.i_have_castled: bool = False
         self.castling_sensed_corridor: bool = False
 
-        # Karabo's opponent piece history (for entropy calculation)
+        # Opponent Piece History for Entropy
         self.opp_piece_history: Dict[chess.Square, Dict[str, chess.Piece]] = {}
-
-    # ── Game lifecycle ─────────────────────────────────────────────────────────
 
     def handle_game_start(
         self,
@@ -370,7 +364,6 @@ class ImprovedAgent(Player):
         self.castling_sensed_corridor = False
         self.opp_piece_history = {}
 
-    # ── Opponent move handling ─────────────────────────────────────────────────
 
     def handle_opponent_move_result(
         self,
@@ -395,7 +388,6 @@ class ImprovedAgent(Player):
         if next_boards:
             self.boards = trim_boards(next_boards, MAX_BOARD_COUNT, self.color)
 
-    # ── Sensing ───────────────────────────────────────────────────────────────
 
     def choose_sense(
         self,
@@ -412,13 +404,13 @@ class ImprovedAgent(Player):
         if not sense_actions:
             return None
 
-        # Priority 1: where was our piece taken?
+        # Where was our piece taken?
         if self.my_piece_captured_square in sense_actions:
             sq = self.my_piece_captured_square
             self._record_sense(sq)
             return sq
 
-        # Priority 2: sense our castling corridor once (Karabo)
+        # Sense our castling corridor
         if not self.i_have_castled and not self.castling_sensed_corridor:
             corridor_sq = self._sense_our_castle_corridor(sense_actions)
             if corridor_sq is not None:
@@ -429,8 +421,7 @@ class ImprovedAgent(Player):
         if not self.boards:
             return random.choice(sense_actions)
 
-        # Build candidate list — exclude squares occupied by own pieces on the
-        # most likely board (avoids wasting the sense window on known-own pieces)
+        # Build candidate list — exclude squares occupied by own pieces on the most likely board (avoids wasting the sense window on known-own pieces)
         boards_to_check = trim_boards(self.boards, MAX_SENSE_BOARD_COUNT, self.color)
         own_squares = {
             sq for sq, piece in boards_to_check[0].piece_map().items()
@@ -475,7 +466,6 @@ class ImprovedAgent(Player):
         self.recent_senses.append(sq)
         self.recent_senses = self.recent_senses[-RECENT_SENSE_COUNT:]
 
-    # ── Sense result ──────────────────────────────────────────────────────────
 
     def handle_sense_result(
         self,
@@ -485,14 +475,14 @@ class ImprovedAgent(Player):
         Jack: filter board pool to only boards consistent with the sense result.
         Karabo: update opponent-piece history for entropy calculation.
         """
-        # Update entropy history (Karabo)
+        # Update entropy history
         for square, piece in sense_result:
             if piece and piece.color != self.color:
                 if square not in self.opp_piece_history:
                     self.opp_piece_history[square] = {}
                 self.opp_piece_history[square][piece.symbol()] = piece
 
-        # Filter board pool (Jack)
+        # Filter board pool
         next_boards = [
             board for board in self.boards
             if all(is_block_consistent(board, block) for block in sense_result)
@@ -508,12 +498,12 @@ class ImprovedAgent(Player):
         seconds_left: float,
     ) -> Optional[chess.Move]:
         """
-        1. King-capture vote across board pool        (Jack)
-        2. Castle ASAP if corridor confirmed clear    (Karabo)
-        3. Anti-castling disruption in opening        (Karabo)
-        4. Stockfish vote across board pool           (Jack, with Karabo's adaptive time)
-        5. Safe-move fallback                         (Karabo)
-        6. Random                                     (Jack)
+        1. King-capture vote across board pool
+        2. Castle ASAP if corridor confirmed clear
+        3. Anti-castling disruption in opening
+        4. Stockfish vote across board pool
+        5. Safe-move fallback
+        6. Random
         """
         if not move_actions:
             return None
@@ -539,20 +529,20 @@ class ImprovedAgent(Player):
                 min(m for m, c in king_votes.items() if c == max_v)
             )
 
-        # ── 2: Castle ASAP ────────────────────────────────────────────────────
+        # Castle ASAP
         if not self.i_have_castled:
             castle_move = self._try_castle(move_actions)
             if castle_move:
                 return castle_move
 
-        # ── 3: Anti-castling disruption (opening only) ────────────────────────
+        # Anti-castling disruption (opening only)
         total_half_moves = sum(len(b.move_stack) for b in boards_to_check) // max(len(boards_to_check), 1)
         if total_half_moves < 20:
             disruption = self._attack_castling_blocker_pawns(move_actions)
             if disruption:
                 return disruption
 
-        # ── 4: Stockfish vote ─────────────────────────────────────────────────
+        # Stockfish vote
         time_limit = get_time_limit(len(boards_to_check))
         # Adaptive: more time early (Karabo's insight)
         total_moves = len(self.boards[0].move_stack) if self.boards else 0
@@ -577,17 +567,17 @@ class ImprovedAgent(Player):
                 min(m for m, c in votes.items() if c == max_v)
             )
 
-        # ── 5: Safe-move fallback ─────────────────────────────────────────────
+        # Safe-move fallback
         if self.boards:
             safe = get_safe_moves(self.boards[0], move_actions)
             if safe:
                 return random.choice(safe)
 
-        # ── 6: Random ─────────────────────────────────────────────────────────
+        # Random
         return get_random_move(move_actions)
 
     def _try_castle(self, move_actions: List[chess.Move]) -> Optional[chess.Move]:
-        """From Karabo: castle if rights exist and corridor is clear on the top board."""
+        """Castle if rights exist and corridor is clear on the top board."""
         if not self.boards:
             return None
         board = self.boards[0]
@@ -610,7 +600,7 @@ class ImprovedAgent(Player):
     def _attack_castling_blocker_pawns(
         self, move_actions: List[chess.Move]
     ) -> Optional[chess.Move]:
-        """From Karabo: develop bishop/knight to threaten opponent castling-shield pawns."""
+        """Develop bishop/knight to threaten opponent castling-shield pawns."""
         if not self.boards:
             return None
         board = self.boards[0]
@@ -634,8 +624,6 @@ class ImprovedAgent(Player):
 
         return best_move_found if best_targets_hit > 0 else None
 
-    # ── Move result ───────────────────────────────────────────────────────────
-
     def handle_move_result(
         self,
         requested_move: Optional[chess.Move],
@@ -643,10 +631,8 @@ class ImprovedAgent(Player):
         captured_opponent_piece: bool,
         capture_square: Optional[chess.Square],
     ):
-        """
-        Jack's thorough board-pool filtering, plus Karabo's castling detection.
-        """
-        # Detect castling (Karabo)
+        
+        # Detect castling
         if taken_move is not None and not self.i_have_castled:
             rank = 1 if self.color == chess.WHITE else 8
             if taken_move in [
@@ -655,7 +641,7 @@ class ImprovedAgent(Player):
             ]:
                 self.i_have_castled = True
 
-        # Filter board pool (Jack)
+        # Filter board pool
         next_boards: List[chess.Board] = []
         for board in self.boards:
             if taken_move is None:
