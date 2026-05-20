@@ -122,13 +122,13 @@ class RandomSensing(Player):
         
         for board in self.boards:
             move = best_move(board, self.engine, time_limit)
-            if move:
+            if move and move in move_actions:
                 key = str(move)
                 votes[key] = votes.get(key, 0) + 1
             
         # Find max votes first, then get min (alphabetically first) among ties
         if not votes:
-            return random.choice(move_actions)
+            return random.choice(move_actions + [chess.Move.null()])
         max_votes = max(votes.values())
         result = min(move for move, count in votes.items() if count == max_votes)
         return chess.Move.from_uci(result)
