@@ -1,0 +1,5 @@
+Agent,Wins,Losses,Win Rate
+ImprovedAgent,6,0,100.0%
+TroutBot,3,3,50.0%
+RandomSensing,3,3,50.0%
+RandomBot,0,6,0.0%
